@@ -1,0 +1,133 @@
+#In R language, k-means function returns a number of ratios like 
+#$betweenss, $withinss, $tot.withinss and $totss. The 
+#question we are facing in this section is to guess which is
+#the meaning of each one.To start off, we could say that ss stands for sum 
+#of squares since it is the metric that k-means uses to know how 
+#compact is a cluster and how different are several clusters among themselves.
+#The basic ones
+#(1) $betweenss: is the between clusters sum of squares. 
+#In fact it is the mean of distances between cluster centers. 
+#One expects, this ratio, to be as higher as possible, 
+#since we would like to have heterogenous clusters.
+#  ( ?m ?n | Cm^P - Cn^P |^2 )  /  p · p - 1
+#(2) $withinss: is the within cluster sum of squares. 
+#So it results in a vector with a number for each cluster.
+#One expects, this ratio, to be as lower as possible for each
+#cluster, since we would like to have homogeneity within the clusters.
+#( ?m  | Xm - C |^2 )  /  p
+#Some equalities may help to understand:
+#$tot.withinss = sum ( $withinss )
+#$totss = $tot.withinss + $betweenss
+#Some situations may help to understand:
+#If we just have 1 cluster, then 
+#$betweenss = 0  and  $tot.withinss = $withinss  and  $totss = $tot.withinss
+
+
+
+setwd("D:/Documents/RD/Hierarchical clustering")
+df <- read.csv("SEALEVEL.csv")
+library(ggplot2)
+names(df)
+cor(df$Level, df$Distanc)
+cor(df[-c(1,2)])
+# which shows that among almost all variables have correlation in abs<0.5.
+# We can see this from the pair map too.
+pairs(df[-c(1,2)], col='red')
+str(df)
+dim(df)
+head(df)
+# Scatter plot
+plot(df$Level~df$Distanc, data = df, col='red')
+plot(df$Distanc~df$Level, data = df, col='red')
+# Scatter plot
+plot(df$Distanc~df$Level, data = df,col='blue', cex=2)
+
+plot(df$Distanc~df$Level, data = df, col='red',pch=16)
+with(df,text(df$Distanc~df$Level, labels=df$Ocean,pos=1))# Scatter plot
+
+# Normalize
+z = df[,-c(1,2)]
+z
+means = apply(z,2,mean)
+sds = apply(z,2,sd)
+normal = scale(z,center=means,scale=sds)
+##calculate distance matrix (default is Euclidean distance)
+# distace beteen rows in R^2 row1=("Level","Distanc").
+##calculate distance matrix (default is Euclidean distance)
+#Each row is a vector with columns components. 
+distance = dist(normal)
+distance
+print(distance, digits=3)
+str(normal)
+# Hierarchical agglomerative clustering using default complete linkage
+hc.c = hclust(distance)    # c= complete linkage
+plot(hc.c)
+plot(hc.c,labels=df$Ocean,main='Default from hclust')
+plot(hc.c,hang=-1)
+plot(hc.c,hang=-1,labels=df$company,main='Default from hclust',col='red') 
+# Cluster membership in 3 cluters which one belong , 2, 3
+member.c = cutree(hc.c,3)
+table(member.c)
+# Cluster means
+aggregate(normal, list(member.c), mean)
+aggregate(normal, list(member.a), mean)
+# in row 3 meaning cluster 3 Level=0.7871577  bigger than all numbers so
+#Level has much impact on cluster 3 but  row 2 Level = -0.6287991  minus 
+#impact on cluster 2.
+# Cluster means in original data
+aggregate(df[-c(1,2)], list(member.c), mean)
+# Silhouette plot
+library(cluster)
+plot(silhouette(cutree(hc.c, 3), distance), col='blue')
+#cluster importance
+#same or close si vaues means the clusters are close
+#Negative si means they are outliers.
+#wss=within group sum of squared
+# Scree Plot
+wss <- (nrow(nor)-1)*sum(apply(normal,2,var))
+for (i in 2:57) wss[i] <- sum(kmeans(normal, centers=i)$withinss)
+plot(1:57, wss, type="b", xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+
+#in the top left corned drop from cluters to clusters
+#are vey high but in bottom right very lower.
+#scree plot shows that after cluster 5 rops are very low
+# means that we should take at most 3 cluters which have
+#high drops.
+# K-means clustering (Non-hiearchical)
+# We take 3 clusters on normalized data nor.
+kc<-kmeans(normal,3)
+kc
+#it gives useful information
+#K-means clustering with 3 clusters of sizes 23, 14, 22
+#Cluster means:
+#  Level    Distanc
+#1  1.0630585 -0.7524147
+#2 -1.2960389  1.5843477
+#3 -0.2866273 -0.2216058
+
+#Clustering vector: 14 Oceans goes to cluter 2 
+#and second to 3 and so on.
+#Clustering vector:
+#[1] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 1 1 1 1 1 1 1 1 1 1 1 1
+#[49] 1 1 1 1 1 1 1 1 1 1 1
+
+
+#Within cluster sum of squares by cluster:
+#  [1] 3.279714 6.474764 5.686377
+#(86.7 %)
+
+#Available components:
+#  [1] "cluster"      "centers"      "totss"        "withinss"    
+#[5] "tot.withinss" "betweenss"    "size"         "iter"        
+#[9] "ifault"      
+kc$cluster
+kc$withinss
+kc$centers
+kc$totss
+kc$tot.withinss
+kc$betweenss
+kc$size
+kc$iter
+kc$ifault
+kc$tot.withinss
